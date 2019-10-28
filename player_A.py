@@ -20,7 +20,7 @@ class Player:
     def __init__(self, paddle_pos, goal_side):
 
         # set your team's name, max. 15 chars
-        self.my_display_name = "DREAM TEAM"
+        self.my_display_name = "FORANEOS"
 
         # these belong to my solution,
         # you may erase or change them in yours
@@ -67,9 +67,20 @@ class Player:
 
         if pt_in_roi:
             # estimate an aiming position
-            target_pos = utils.aim(pt_in_roi[0], pt_in_roi[1],
-                                   self.opponent_goal_center, current_state['puck_radius'],
-                                   current_state['paddle_radius'])
+            if self.my_goal == 'left':
+                if current_state['puck_speed']['x'] <= 0:
+                    target_pos = utils.aim(pt_in_roi[0], pt_in_roi[1],
+                                           self.opponent_goal_center, current_state['puck_radius'],
+                                           current_state['paddle_radius'])
+                else:
+                    target_pos = {'x': self.starting_pos['x'], 'y': self.starting_pos['y']}
+            else:
+                if current_state['puck_speed']['x'] >= 0:
+                    target_pos = utils.aim(pt_in_roi[0], pt_in_roi[1],
+                                           self.opponent_goal_center, current_state['puck_radius'],
+                                           current_state['paddle_radius'])
+                else:
+                    target_pos = {'x': self.starting_pos['x'], 'y': self.starting_pos['y']}
 
             # move to target position, taking into account the max. paddle speed
             if target_pos != self.my_paddle_pos:
@@ -83,13 +94,8 @@ class Player:
                 direction_vector = {k: v * movement_dist
                                     for k, v in direction_vector.items()}
 
-
-                if current_state['puck_speed']['x'] <= 0:
-                    new_paddle_pos = {'x': self.my_paddle_pos['x'] + direction_vector['x'],
-                                      'y': self.my_paddle_pos['y'] + direction_vector['y']}
-                else:
-                    new_paddle_pos = {'x': self.my_paddle_pos['x'],# + direction_vector['x'],
-                                      'y': self.my_paddle_pos['y'] + direction_vector['y']}
+                new_paddle_pos = {'x': self.my_paddle_pos['x'] + direction_vector['x'],
+                                  'y': self.my_paddle_pos['y'] + direction_vector['y']}
 
                 # check if computed new position in not inside goal area
                 # check if computed new position in inside board limits
