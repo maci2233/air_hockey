@@ -88,8 +88,8 @@ class Player:
                     new_paddle_pos = {'x': self.my_paddle_pos['x'] + direction_vector['x'],
                                       'y': self.my_paddle_pos['y'] + direction_vector['y']}
                 else:
-                    new_paddle_pos = {'x': self.starting_pos['x'],# + direction_vector['x'],
-                                      'y': self.starting_pos['y'] + direction_vector['y']}
+                    new_paddle_pos = {'x': self.my_paddle_pos['x'],# + direction_vector['x'],
+                                      'y': self.my_paddle_pos['y'] + direction_vector['y']}
 
                 # check if computed new position in not inside goal area
                 # check if computed new position in inside board limits
