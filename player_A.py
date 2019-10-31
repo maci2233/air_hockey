@@ -33,6 +33,7 @@ class Player:
         self.last_v_x_direction = None # -1 means left, 1 mins right, 0 means no horizontal speed
         self.puck_path = None
         self.goal_y_coordinates = None
+        self.hit_puck_twice = 75
 
     def aim(self, pos, speed, pos_target, puck_radius, paddle_radius):
         """ Function that computes where to put the paddle for a target puck position
@@ -110,19 +111,38 @@ class Player:
         #check if puck is coming to my side, check if it has goal direction
         if self.puck_path and len(self.puck_path) > 0:
             if self.my_goal == "left" and v_x_direction < 0:
-                path_to_my_side = self.puck_path[-1]
-                goal_dir = goal_direction(path_to_my_side, self.goal_y_coordinates)
+                #SI EL PUCK TIENE MENOS DE 2 REBOTES QUE INTERCEPTE EL TIRO A GOL
+                if len(self.puck_path) < 3:
+                    path_to_my_side = self.puck_path[-1]
+                    #goal_dir = goal_direction(path_to_my_side, self.goal_y_coordinates)
+                #SI EL PUCK TIENE 2 O MAS REBOTES CHECAMOS SI EL ULTIMO REBOTE ESTA CERCA DE LA PORTERIA
+                #PARA INTERCEPTAR MEJOR LA PENULTIMA LINEA EN LUGAR DE LA ULTIMA
+                else:
+                    if self.puck_path[-1][0][0] < current_state['board_shape'][1] * .20: #20% del largo de la cancha
+                        print('Intercepta 2do')
+                        path_to_my_side = self.puck_path[-2]
+                    else:
+                        path_to_my_side = self.puck_path[-1]
+                goal_dir = goal_direction(self.puck_path[-1], self.goal_y_coordinates)
                 #slope
                 try:
-                    m_puck = (self.puck_path[-1][1][1] - self.puck_path[-1][0][1])/(self.puck_path[-1][1][0] - self.puck_path[-1][0][0])
+                    #m_puck = (self.puck_path[-1][1][1] - self.puck_path[-1][0][1])/(self.puck_path[-1][1][0] - self.puck_path[-1][0][0])
+                    m_puck = (path_to_my_side[1][1] - path_to_my_side[0][1])/(path_to_my_side[1][0] - path_to_my_side[0][0])
                 except ZeroDivisionError:
                     m_puck = 0
             elif self.my_goal == "right" and v_x_direction > 0:
-                path_to_my_side = self.puck_path[-1]
-                goal_dir = goal_direction(path_to_my_side, self.goal_y_coordinates)
+                if len(self.puck_path) < 3:
+                    path_to_my_side = self.puck_path[-1]
+                else:
+                    if self.puck_path[-1][0][0] > current_state['board_shape'][1] * .80: #80% del largo de la cancha
+                        print('Intercepta 2do')
+                        path_to_my_side = self.puck_path[-2]
+                    else:
+                        path_to_my_side = self.puck_path[-1]
+                goal_dir = goal_direction(self.puck_path[-1], self.goal_y_coordinates)
                 #slope
                 try:
-                    m_puck = (self.puck_path[-1][1][1] - self.puck_path[-1][0][1])/(self.puck_path[-1][1][0] - self.puck_path[-1][0][0])
+                    m_puck = (path_to_my_side[1][1] - path_to_my_side[0][1])/(path_to_my_side[1][0] - path_to_my_side[0][0])
                 except ZeroDivisionError:
                     m_puck = 0
 
@@ -148,12 +168,14 @@ class Player:
             if m_puck != 0:
                 m_player = -1/m_puck
                 b_player = self.my_paddle_pos['y'] - m_player*self.my_paddle_pos['x']
-                b_puck = self.puck_path[-1][1][1] - m_puck*self.puck_path[-1][1][0]
+                #[-1] es ultima linea, [1] es el punto final, y el [1] es coordenada en y de ese punto
+                b_puck = path_to_my_side[1][1] - m_puck*path_to_my_side[1][0]
                 x = -(b_player - b_puck)/(m_player-m_puck)
                 y = m_player * x + b_player
             else:
                 x = self.my_paddle_pos['x']
                 y = self.puck_path[-1][1][1]
+
             target_pos = {'x': x, 'y': y}
 
         #if it is already blocking the goal, aim. Or if the shot is not on target.
@@ -171,7 +193,7 @@ class Player:
             if pt_in_roi:
                 # estimate an aiming position
                 if self.my_goal == 'left':
-                    if current_state['puck_speed']['x'] <= 0:
+                    if current_state['puck_speed']['x'] <= 0 or (abs(current_state['puck_speed']['x']) < self.hit_puck_twice and current_state['goals']['right'] > current_state['goals']['left']):
                         target_pos = self.aim(pt_in_roi[0], pt_in_roi[1],
                                                self.next_target,
                                                #self.opponent_goal_center,
@@ -179,8 +201,8 @@ class Player:
                                                current_state['paddle_radius'])
                     else:
                         target_pos = {'x': self.starting_pos['x'], 'y': self.starting_pos['y']}
-                else: #SELF.MY_GOAL == 'LEFT'
-                    if current_state['puck_speed']['x'] >= 0:
+                else: #SELF.MY_GOAL == 'RIGHT'
+                    if current_state['puck_speed']['x'] >= 0 or (abs(current_state['puck_speed']['x']) < self.hit_puck_twice and current_state['goals']['left'] > current_state['goals']['right']):
                         target_pos = self.aim(pt_in_roi[0], pt_in_roi[1],
                                                self.next_target,
                                                #self.opponent_goal_center,
@@ -219,6 +241,8 @@ class Player:
             if utils.is_inside_goal_area_paddle(new_paddle_pos, current_state) is False and \
                  utils.is_out_of_boundaries_paddle(new_paddle_pos, current_state) is None:
                 self.my_paddle_pos = new_paddle_pos
+            else:
+                print("Tramposo")
 
         # time.sleep(2)
         # return {'x': -12, 'y': -6543}
