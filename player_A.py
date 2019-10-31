@@ -20,7 +20,7 @@ class Player:
     def __init__(self, paddle_pos, goal_side):
 
         # set your team's name, max. 15 chars
-        self.my_display_name = "FORANEOS"
+        self.my_display_name = f'FORANEOS_{goal_side}'
 
         # these belong to my solution,
         # you may erase or change them in yours
@@ -123,7 +123,7 @@ class Player:
                 #slope
                 try:
                     m_puck = (self.puck_path[-1][1][1] - self.puck_path[-1][0][1])/(self.puck_path[-1][1][0] - self.puck_path[-1][0][0])
-                except ZeroDivisionerror:
+                except ZeroDivisionError:
                     m_puck = 0
 
 
@@ -343,7 +343,7 @@ def calculate_path(state):
 
 #checks if the path denoted by <line> will end up between <y_coordinates>
 def goal_direction(line, y_coordinates):
-    if line[1][1] > (y_coordinates[0] - 10) and line[1][1] < (y_coordinates[1] + 10):
+    if line[1][1] > (y_coordinates[0] - 100) and line[1][1] < (y_coordinates[1] + 100):
         return True
     else:
         return False
