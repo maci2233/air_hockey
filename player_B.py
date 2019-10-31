@@ -10,26 +10,57 @@ The only restrictions here are:
  - to implement a class constructor with the args: paddle_pos, goal_side
  - set self.my_display_name with your team's name, max. 15 characters
  - to implement the function next_move(self, current_state),
-    returnin the next position of your paddle
+    returning the next position of your paddle
 """
 
 import copy
 import utils
-import random
 
 class Player:
     def __init__(self, paddle_pos, goal_side):
 
         # set your team's name, max. 15 chars
-        self.my_display_name = "AIR KINGS"
+        self.my_display_name = "FORANEOS"
 
         # these belong to my solution,
         # you may erase or change them in yours
-        self.future_size = 1
+        self.future_size = 30
         self.my_goal = goal_side
         self.my_goal_center = {}
         self.opponent_goal_center = {}
         self.my_paddle_pos = paddle_pos
+        self.starting_pos = paddle_pos
+
+    def aim(self, pos, speed, pos_target, puck_radius, paddle_radius):
+        """ Function that computes where to put the paddle for a target puck position
+
+        Args:
+            pos: puck position
+            speed: puck speed
+            pos_target: target position of puck
+
+        Returns:
+            dict: paddle position to achieve puck target position
+        """
+
+        # target direction vector, normalized, opposite direction
+        dir_vector = {'x': pos_target['x'] - pos['x'], 'y': pos_target['y'] - pos['y']}
+        dir_vector = {k: -1 * v / utils.vector_l2norm(dir_vector) for k, v in dir_vector.items()}
+
+        # normalized puck speed
+        speed_n = {k: v / utils.vector_l2norm(speed)  for k, v in speed.items()}
+
+
+        intersection_vector = {'x': dir_vector['x'] + speed_n['x'], 'y': dir_vector['y'] + speed_n['y']}
+        intersection_vector = {k: v / utils.vector_l2norm(intersection_vector)
+                               for k, v in intersection_vector.items()}
+
+        # length of collision point from pos
+        intersection_vector = {k: v * (puck_radius + paddle_radius)
+                               for k, v in intersection_vector.items()}
+
+        #
+        return {'x': pos['x'] + intersection_vector['x'], 'y': pos['y'] + intersection_vector['y']}
 
 
     def next_move(self, current_state):
@@ -46,6 +77,9 @@ class Player:
         # I need to do this because GameCore moves my paddle randomly
         self.my_paddle_pos = current_state['paddle1_pos'] if self.my_goal == 'left' \
                                                               else current_state['paddle2_pos']
+        self.enemy_paddle_pos = current_state['paddle1_pos'] if self.my_goal == 'right' \
+                                                              else current_state['paddle2_pos']
+
 
         # estimate puck path
         path = estimate_path(current_state, self.future_size)
@@ -53,24 +87,44 @@ class Player:
         # computing both goal centers
         self.my_goal_center = {'x': 0 if self.my_goal == 'left' else current_state['board_shape'][1],
                                'y': current_state['board_shape'][0]/2}
-        y = random.uniform(140, 370)
         self.opponent_goal_center = {'x': 0 if self.my_goal == 'right' else current_state['board_shape'][1],
-                                     'y': y}
-
-
+                                     'y': current_state['board_shape'][0]/2}
+        self.bounce_up = {'x': current_state['board_shape'][1] * .60 if self.my_goal == 'left' else current_state['board_shape'][1] * .40,
+                          'y': 0}
+        self.bounce_down = {'x': current_state['board_shape'][1] * .60 if self.my_goal == 'left' else current_state['board_shape'][1] * .40,
+                          'y': current_state['board_shape'][0]}
+        if self.enemy_paddle_pos['y'] > current_state['board_shape'][0]/2:
+            self.next_target = self.bounce_up
+        else:
+            self.next_target = self.bounce_down
+        #self.next_target = self.opponent_goal_center
         # find if puck path is inside my interest area
-        roi_radius = current_state['board_shape'][0] * current_state['goal_size']
+        roi_radius = current_state['board_shape'][0] * current_state['goal_size'] * 2
         pt_in_roi = None
         for p in path:
             if utils.distance_between_points(p[0], self.my_goal_center) < roi_radius:
                 pt_in_roi = p
                 break
-
         if pt_in_roi:
             # estimate an aiming position
-            target_pos = utils.aim(pt_in_roi[0], pt_in_roi[1],
-                                   self.opponent_goal_center, current_state['puck_radius'],
-                                   current_state['paddle_radius'])
+            if self.my_goal == 'left':
+                if current_state['puck_speed']['x'] <= 0:
+                    target_pos = self.aim(pt_in_roi[0], pt_in_roi[1],
+                                           self.next_target,
+                                           #self.opponent_goal_center,
+                                           current_state['puck_radius'],
+                                           current_state['paddle_radius'])
+                else:
+                    target_pos = {'x': self.starting_pos['x'], 'y': self.starting_pos['y']}
+            else: #SELF.MY_GOAL == 'LEFT'
+                if current_state['puck_speed']['x'] >= 0:
+                    target_pos = self.aim(pt_in_roi[0], pt_in_roi[1],
+                                           self.next_target,
+                                           #self.opponent_goal_center,
+                                           current_state['puck_radius'],
+                                           current_state['paddle_radius'])
+                else:
+                    target_pos = {'x': self.starting_pos['x'], 'y': self.starting_pos['y']}
 
             # move to target position, taking into account the max. paddle speed
             if target_pos != self.my_paddle_pos:
@@ -83,8 +137,20 @@ class Player:
                                     utils.distance_between_points(target_pos, self.my_paddle_pos))
                 direction_vector = {k: v * movement_dist
                                     for k, v in direction_vector.items()}
-                new_paddle_pos = {'x': self.my_paddle_pos['x'] + direction_vector['x'],
-                                  'y': self.my_paddle_pos['y'] + direction_vector['y']}
+                if self.my_goal == 'left':
+                    if current_state['puck_speed']['x'] >= 0:
+                        new_paddle_pos = {'x': self.my_paddle_pos['x'] + direction_vector['x'],
+                                          'y': self.my_paddle_pos['y'] + direction_vector['y']}
+                    else:
+                        new_paddle_pos = {'x': self.my_paddle_pos['x'],# + direction_vector['x'],
+                                          'y': self.my_paddle_pos['y'] + direction_vector['y']}
+                else:
+                    if current_state['puck_speed']['x'] <= 0:
+                        new_paddle_pos = {'x': self.my_paddle_pos['x'] + direction_vector['x'],
+                                          'y': self.my_paddle_pos['y'] + direction_vector['y']}
+                    else:
+                        new_paddle_pos = {'x': self.my_paddle_pos['x'],# + direction_vector['x'],
+                                          'y': self.my_paddle_pos['y'] + direction_vector['y']}
 
                 # check if computed new position in not inside goal area
                 # check if computed new position in inside board limits
@@ -92,6 +158,8 @@ class Player:
                      utils.is_out_of_boundaries_paddle(new_paddle_pos, current_state) is None:
                     self.my_paddle_pos = new_paddle_pos
 
+        # time.sleep(2)
+        # return {'x': -12, 'y': -6543}
         return self.my_paddle_pos
 
 
