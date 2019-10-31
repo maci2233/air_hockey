@@ -274,4 +274,4 @@ def rectify_circle_out_of_bounds(pos, goal_side, state):
         r = state['goal_size'] * board_shape[0] / 2 + 2
         pos = nearest_point_in_circle(center, r, pos)
 
-    return pos 'y': py}
+    return pos

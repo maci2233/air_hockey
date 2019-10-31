@@ -40,6 +40,7 @@ def main(args):
     state['paddle_max_speed'] = 150
     state['goals'] = {'left': 0, 'right': 0}
     state['is_goal_move'] = None
+    state['path_puck'] = None
     epsilon = 1
 
     # initiallize gui core

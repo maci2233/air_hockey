@@ -9,7 +9,7 @@ Be sure you have installed OpenCV, ffmpeg, x264.
 import copy
 import cv2 as cv
 import numpy as np
-
+from random import randint
 import utils
 
 class GUICore:
@@ -53,6 +53,11 @@ class GUICore:
                   state['paddle_radius'], (255, 0, 0), -1)
         cv.circle(board_feedback, utils.round_point_as_tuple(state['paddle2_pos']),
                   state['paddle_radius'], (0, 0, 255), -1)
+        if state['path_puck']:
+            for points in state['path_puck']:
+                points = [(int(points[0][0]), int(points[0][1])),(int(points[1][0]), int(points[1][1]))]
+                cv.line(board_feedback, points[0], points[1], (randint(0,255),randint(0,255),randint(0,255)),5)
+
 
 
         if state['is_goal_move'] is None:

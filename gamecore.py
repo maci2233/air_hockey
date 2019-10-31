@@ -55,6 +55,7 @@ class GameCore:
             #####################################################################
             ### Visual feedback
             #####################################################################
+            self.calculate_path()
             flag = self.resolve_gui()
             if flag:
                 return flag
@@ -153,6 +154,99 @@ class GameCore:
                                    self.state['puck_radius'])}
         return pos
 
+    def calculate_path(self):
+        x1 = self.state['puck_pos']['x']
+        y1 = self.state['puck_pos']['y']
+        v_x = self.state['puck_speed']['x'] * self.state['delta_t']
+        v_y = self.state['puck_speed']['y'] * self.state['delta_t']
+        x2 = self.state['puck_pos']['x'] + v_x
+        y2 = self.state['puck_pos']['y'] + v_y
+        h = self.state['board_shape'][0]
+        w = self.state['board_shape'][1]
+        puck_radius = self.state['puck_radius']
+        coord_puck_position = (x1, y1)
+        if x2 != x1:
+            m = (y2 - y1) / (x2 - x1)
+        else:
+            m = 0
+        b = y1 - m * x1
+        if v_x == 0:
+            if v_y > 0:
+                self.state['path_puck'] = [[coord_puck_position, (x1, h)]]
+            else:
+                self.state['path_puck'] = [[coord_puck_position, (x1, 0)]]
+        elif v_y == 0:
+            if v_x > 0:
+                self.state['path_puck'] = [[coord_puck_position, (w, y1)]]
+            else:
+                self.state['path_puck'] = [[coord_puck_position, (0, y1)]]
+        else:
+            flag = True
+            self.state['path_puck'] = []
+            while flag:
+                if v_x > 0 and v_y > 0: #upper right
+                    distance_to_x = w - x1 - puck_radius
+                    distance_to_y = h - y1 - puck_radius
+                    steps_x = abs(distance_to_x // v_x)
+                    steps_y = abs(distance_to_y // v_y)
+                    if steps_x < steps_y:
+                        x = x1 + steps_x * v_x
+                        y = m * x + b
+                        flag = False
+                    else:
+                        y = y1 + steps_y * v_y
+                        x = (y - b) / m
+                        v_y = -v_y
+                elif v_x > 0 and v_y < 0: #lower right
+                    distance_to_x = w - x1 - puck_radius
+                    distance_to_y = y1 - puck_radius
+                    steps_x = abs(distance_to_x // v_x)
+                    steps_y = abs(distance_to_y // v_y) - 1
+                    if steps_x < steps_y:
+                        x = x1 + steps_x * v_x
+                        y = m * x + b
+                        flag = False
+                    else:
+                        y = y1 + steps_y * v_y
+                        x = (y - b) / m
+                        v_y = -v_y
+                elif v_x < 0 and v_y < 0: #lower left
+                    distance_to_x = x1 - puck_radius
+                    distance_to_y = y1 - puck_radius
+                    steps_x = abs(distance_to_x // v_x)
+                    steps_y = abs(distance_to_y // v_y) - 1
+                    if steps_x < steps_y:
+                        x = x1 + steps_x * v_x
+                        y = m * x + b
+                        flag = False
+                    else:
+                        y = y1 + steps_y * v_y
+                        x = (y - b) / m
+                        v_y = -v_y
+                elif v_x < 0 and v_y > 0: #upper left
+                    distance_to_x = x1 - puck_radius
+                    distance_to_y = h - y1 - puck_radius
+                    steps_x = abs(distance_to_x // v_x)
+                    steps_y = abs(distance_to_y // v_y)
+                    if steps_x < steps_y:
+                        x = x1 + steps_x * v_x
+                        y = m * x + b
+                        flag = False
+                    else:
+                        y = y1 + steps_y * v_y
+                        x = (y - b) / m
+                        v_y = -v_y
+                self.state['path_puck'].append([coord_puck_position, (x, y)])
+                x1 = x
+                y1 = y
+                x2 = x1 + v_x
+                y2 = y1 + v_y
+                coord_puck_position = (x1, y1)
+                if x2 != x1:
+                    m = (y2 - y1) / (x2 - x1)
+                else:
+                    m = 0
+                b = y1 - m * x1
 
     def check_stop_game_conditions(self):
         # check if any player achieved winning points
