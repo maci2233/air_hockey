@@ -1,8 +1,11 @@
 """ Player module
+
 This is a template/example class for your player.
 This is the only file you should modify.
+
 The logic of your hockey robot will be implemented in this class.
 Please implement the interface next_move().
+
 The only restrictions here are:
  - to implement a class constructor with the args: paddle_pos, goal_side
  - set self.my_display_name with your team's name, max. 15 characters
@@ -22,7 +25,7 @@ class Player:
 
         # these belong to my solution,
         # you may erase or change them in yours
-        self.future_size = 30
+        self.future_size = 1
         self.my_goal = goal_side
         self.my_goal_center = {}
         self.opponent_goal_center = {}
@@ -31,8 +34,10 @@ class Player:
 
     def next_move(self, current_state):
         """ Function that computes the next move of your paddle
+
         Implement your algorithm here. This will be the only function
         used by the GameCore. Be aware of abiding all the game rules.
+
         Returns:
             dict: coordinates of next position of your paddle.
         """
@@ -51,9 +56,10 @@ class Player:
         y = random.uniform(140, 370)
         self.opponent_goal_center = {'x': 0 if self.my_goal == 'right' else current_state['board_shape'][1],
                                      'y': y}
+        
 
         # find if puck path is inside my interest area
-        roi_radius = current_state['board_shape'][0] * current_state['goal_size'] * 2
+        roi_radius = current_state['board_shape'][0] * current_state['goal_size']
         pt_in_roi = None
         for p in path:
             if utils.distance_between_points(p[0], self.my_goal_center) < roi_radius:
@@ -91,6 +97,7 @@ class Player:
 
 def estimate_path(current_state, after_time):
     """ Function that function estimates the next moves in a after_time window
+
     Returns:
         list: coordinates and speed of puck for next ticks
     """
