@@ -1,13 +1,17 @@
 """ Useful functions
+
 This module implements several useful functions that you might want to reuse.
 Some of these functions implements the oficial rules of the challenge.
+
 """
 
 
 def next_pos_from_state(state):
     """ Function that computes the next puck position
+
     From the current state, the next position of the puck is computed
     but not set.
+
     Returns:
         dict: coordinates
     """
@@ -18,9 +22,11 @@ def next_pos_from_state(state):
 
 def next_after_boundaries(state):
     """ Function that computes the next speed after bounce
+
     If current puck position implies a bounce, the next puck speed
     is computed based on against which border the bounce occurs.
     e.g., horizontal or vertical.
+
     Returns:
         dict: speed components in x and y
     """
@@ -33,6 +39,7 @@ def next_after_boundaries(state):
 
 def is_out_of_boundaries(state):
     """ Function that detects if the puck is out of the board limits.
+
     Returns:
         None: if is not out of the boundaries
         str: 'horizontal' or 'vertical' if is out of boundaries.
@@ -48,6 +55,7 @@ def is_out_of_boundaries(state):
 
 def is_out_of_boundaries_paddle(paddle_pos, state):
     """ Function that detects if a paddle is out of the board limits.
+
     Returns:
         None: if is not out of the boundaries
         str: 'horizontal' or 'vertical' if is out of boundaries.
@@ -63,6 +71,7 @@ def is_out_of_boundaries_paddle(paddle_pos, state):
 
 def is_inside_goal_area_paddle(paddle_pos, state):
     """ Function that detects if a paddle is the goal area.
+
     Returns:
         bool: eval result
     """
@@ -80,6 +89,7 @@ def is_inside_goal_area_paddle(paddle_pos, state):
 
 def is_goal(state):
     """ Function that detects if the puck is inside the goal area.
+
     Returns:
         None: if is not goal
         str: 'left' or 'right' according to the goal area if positive for goal.
@@ -97,6 +107,7 @@ def is_goal(state):
 
 def distance_between_points(p1, p2):
     """ Function that computes the euclidean distance between to points.
+
     Returns:
         float: distance value
     """
@@ -105,6 +116,7 @@ def distance_between_points(p1, p2):
 
 def detect_collision(state, pos2, r2):
     """ Function that detects if the puck collided with a paddle of pos2 and r2 radius
+
     Returns:
         bool: True if collision occurred, False if not
     """
@@ -114,6 +126,7 @@ def detect_collision(state, pos2, r2):
 
 def vector_l2norm(v):
     """ Function that computes the L2 norm (magnitude) of a vector.
+
     Returns:
         float: magnitude value
     """
@@ -122,6 +135,7 @@ def vector_l2norm(v):
 
 def next_speed_after_collision(pos1, speed1, pos2, speed2):
     """ Function that computes the resulting speed of the puck after collision.
+
     Returns:
         dict: speed components in x and y of puck
     """
@@ -155,6 +169,7 @@ def next_speed_after_collision(pos1, speed1, pos2, speed2):
 
 def next_speed(state):
     """ Function that computes the resulting speed of the puck after move.
+
     Returns:
         dict: speed components in x and y of puck
     """
@@ -172,10 +187,12 @@ def next_speed(state):
 
 def aim(pos, speed, pos_target, puck_radius, paddle_radius):
     """ Function that computes where to put the paddle for a target puck position
+
     Args:
         pos: puck position
         speed: puck speed
         pos_target: target position of puck
+
     Returns:
         dict: paddle position to achieve puck target position
     """
@@ -214,14 +231,16 @@ def nearest_point_in_circle(center, r, point):
 
 
 def rectify_circles_overlap(center_1, r_1, center_2, r_2):
-    """ Function that resolve overlap between circles by moving away circle2 until 1 
-    point intersection between the two circels but keeping the same orientation 
+    """ Function that resolve overlap between circles by moving away circle2 until 1
+    point intersection between the two circels but keeping the same orientation
     (i.e., the direction after collision will hold)
+
     Args:
         center_1: position of not-moving circle (puck)
         r_1: radius of circle1
         center_2: position of moving-circle (paddle)
         r_2: radius of circle1
+
     Returns:
         New position for circle2 (paddle), resulting in only one intersection point
         between paddle and puck.
@@ -242,20 +261,32 @@ def rectify_circles_overlap(center_1, r_1, center_2, r_2):
 def rectify_circle_out_of_bounds(pos, goal_side, state):
     """ Function that moves the puck to a safe area if it is out of limits,
     i.e., out of board or inside goal area
+
     Args:
         pos: paddle position
         goal_side: goal side of paddle owner
         state: state of game
+
     Returns:
         New position for paddle if it was out of limits
     """
 
+    pos = rectify_cicle_out_of_board(pos, goal_side, state)
+    pos = rectify_cicle_inside_goal_area(pos, goal_side, state)
+    return pos
+
+
+def rectify_cicle_out_of_board(pos, goal_side, state):
     board_shape = state['board_shape']
     r = state['paddle_radius']
 
     # check for board limits
-    lref = r if goal_side == 'left' else board_shape[1]/2 + r
-    rref = board_shape[1]/2 - r if goal_side == 'left' else board_shape[1] - r
+    if goal_side:
+        lref = r if goal_side == 'left' else board_shape[1]/2 + r
+        rref = board_shape[1]/2 - r if goal_side == 'left' else board_shape[1] - r
+    else:
+        lref = r
+        rref = board_shape[1] - r
 
     if pos['x'] < lref:
         pos['x'] = lref
@@ -265,9 +296,13 @@ def rectify_circle_out_of_bounds(pos, goal_side, state):
         pos['y'] = r
     if pos['y'] > board_shape[0] - r:
         pos['y'] = board_shape[0] - r
+    return pos
 
+
+def rectify_cicle_inside_goal_area(pos, goal_side, state):
     # check for goal area limits
     # if inside area, move it to the closet point out of goal area
+    board_shape = state['board_shape']
     if is_inside_goal_area_paddle(pos, state):
         center = {'x': 0 if goal_side == 'left' else board_shape[1],
                   'y': board_shape[0]/2}

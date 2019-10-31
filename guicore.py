@@ -9,7 +9,7 @@ Be sure you have installed OpenCV, ffmpeg, x264.
 import copy
 import cv2 as cv
 import numpy as np
-from random import randint
+
 import utils
 
 class GUICore:
@@ -22,7 +22,7 @@ class GUICore:
         if show_window:
             cv.namedWindow('AIR HOCKEY')
         if save_video:
-            self.out_vid = cv.VideoWriter(video_file, cv.VideoWriter_fourcc(*'H264'), 30,
+            self.out_vid = cv.VideoWriter(video_file, cv.VideoWriter_fourcc(*'H264'), 50,
                                           (self.board.shape[1], int(round(self.board.shape[0] * 1.25))))
 
 
@@ -53,11 +53,6 @@ class GUICore:
                   state['paddle_radius'], (255, 0, 0), -1)
         cv.circle(board_feedback, utils.round_point_as_tuple(state['paddle2_pos']),
                   state['paddle_radius'], (0, 0, 255), -1)
-        if state['path_puck']:
-            for points in state['path_puck']:
-                points = [(int(points[0][0]), int(points[0][1])),(int(points[1][0]), int(points[1][1]))]
-                cv.line(board_feedback, points[0], points[1], (randint(0,255),randint(0,255),randint(0,255)),5)
-
 
 
         if state['is_goal_move'] is None:
@@ -86,7 +81,7 @@ class GUICore:
         else:
             # write GOAL sign
             pos_xy = (int(board_feedback.shape[1]/2), int(round(self.board.shape[0] * 1.20)))
-            self.draw_text(board_feedback, 'GOALLLL for ' + (p1 if state['is_goal_move'] == 'left' else p2),
+            self.draw_text(board_feedback, 'GOALLL for ' + (p1 if state['is_goal_move'] == 'left' else p2),
                            pos_xy, (0, 165, 255), (255, 255, 255), 1.5, 3, 'center')
 
         if self.save_video:
