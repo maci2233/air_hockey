@@ -79,7 +79,7 @@ class Player:
         #calculate y_coordinates of the goal
         if not self.goal_y_coordinates:
             h = current_state['board_shape'][0]
-            self.goal_y_coordinates = ((h/2)*(1-current_state['goal_size']), (h/2)*(1+current_state['goal_size'])) 
+            self.goal_y_coordinates = ((h/2)*(1-current_state['goal_size']), (h/2)*(1+current_state['goal_size']))
 
         # update my paddle pos
         # I need to do this because GameCore moves my paddle randomly
@@ -109,11 +109,11 @@ class Player:
         goal_dir = None
         #check if puck is coming to my side, check if it has goal direction
         if self.puck_path and len(self.puck_path) > 0:
-            if self.my_goal == "left" and v_x_direction < 0: 
+            if self.my_goal == "left" and v_x_direction < 0:
                 path_to_my_side = self.puck_path[-1]
                 goal_dir = goal_direction(path_to_my_side, self.goal_y_coordinates)
                 #slope
-                try: 
+                try:
                     m_puck = (self.puck_path[-1][1][1] - self.puck_path[-1][0][1])/(self.puck_path[-1][1][0] - self.puck_path[-1][0][0])
                 except ZeroDivisionError:
                     m_puck = 0
@@ -343,8 +343,7 @@ def calculate_path(state):
 
 #checks if the path denoted by <line> will end up between <y_coordinates>
 def goal_direction(line, y_coordinates):
-    if line[1][1] > y_coordinates[0] and line[1][1] < y_coordinates[1]:
+    if line[1][1] > (y_coordinates[0] - 10) and line[1][1] < (y_coordinates[1] + 10):
         return True
-    else: 
+    else:
         return False
-
