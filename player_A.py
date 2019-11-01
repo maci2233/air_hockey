@@ -131,8 +131,7 @@ class Player:
         else:
             v_x_direction = 0
 
-        if self.last_v_x_direction != v_x_direction:
-            self.puck_path = calculate_path(current_state)
+        self.puck_path = calculate_path(current_state)
 
         self.last_v_x_direction = v_x_direction
 
@@ -206,6 +205,18 @@ class Player:
                 y = self.puck_path[-1][1][1]
 
             target_pos = {'x': x, 'y': y}
+            while True:
+                side = 1 if self.my_goal == "left" else -1
+                if utils.is_inside_goal_area_paddle(target_pos,current_state):
+                    if m_puck != 0:
+                        x = x + side
+                        y = m_player * x + b_player
+                    else:
+                        x = x + side
+                    target_pos = {'x':x, 'y': y}
+                else:
+                    break
+
             #print(target_pos)
 
         #if it is already blocking the goal, aim. Or if the shot is not on target.
